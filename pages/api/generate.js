@@ -1,5 +1,3 @@
-import sharp from 'sharp';
-
 export const config = { api: { bodyParser: { sizeLimit: '10mb' } } };
 
 export default async function handler(req, res) {
@@ -8,16 +6,11 @@ export default async function handler(req, res) {
 
   try {
     const base64Data = imageBase64.split(',')[1];
-    const inputBuffer = Buffer.from(base64Data, 'base64');
+    const buffer = Buffer.from(base64Data, 'base64');
+    const blob = new Blob([buffer], { type: 'image/png' });
 
-    const pngBuffer = await sharp(inputBuffer)
-      .resize(512, 512, { fit: 'cover' })
-      .png()
-      .toBuffer();
-
-    const { default: FormData } = await import('form-data');
     const form = new FormData();
-    form.append('image', pngBuffer, { filename: 'image.png', contentType: 'image/png' });
+    form.append('image', blob, 'image.png');
     form.append('prompt', ifCondition);
     form.append('n', '1');
     form.append('size', '512x512');
@@ -26,7 +19,6 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        ...form.getHeaders(),
       },
       body: form,
     });
